@@ -1,25 +1,48 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { CartProvider } from "@/lib/cart-context";
+import AppLayout from "@/components/AppLayout";
+import DesktopNav from "@/components/DesktopNav";
+import Index from "./pages/Index";
+import StorePage from "./pages/StorePage";
+import CartPage from "./pages/CartPage";
+import FeedPage from "./pages/FeedPage";
+import HymnsPage from "./pages/HymnsPage";
+import EventsPage from "./pages/EventsPage";
+import PrayerWallPage from "./pages/PrayerWallPage";
+import AboutPage from "./pages/AboutPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <CartProvider>
+        <Toaster />
+        <BrowserRouter>
+          <DesktopNav />
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/store" element={<StorePage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/feed" element={<FeedPage />} />
+              <Route path="/hymns" element={<HymnsPage />} />
+              <Route path="/events" element={<EventsPage />} />
+              <Route path="/prayer-wall" element={<PrayerWallPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
