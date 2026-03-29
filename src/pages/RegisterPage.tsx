@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Users, Shield, Settings } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type UserRole = "member" | "leadership" | "admin";
 
@@ -15,10 +16,31 @@ const roles: { value: UserRole; label: string; description: string; icon: typeof
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", branch: "", password: "" });
   const [role, setRole] = useState<UserRole>("member");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Registration not yet connected", description: "Enable Lovable Cloud to add real auth." });
+    if (!form.name || !form.email || !form.password) {
+      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: { full_name: form.name, phone: form.phone, branch: form.branch, role },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Registration failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Account created!", description: "Check your email to verify your account." });
+      navigate("/login");
+    }
   };
 
   const update = (key: string, val: string) => setForm({ ...form, [key]: val });
@@ -35,19 +57,14 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
-          {/* Role selection */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">I am a</label>
             <RadioGroup value={role} onValueChange={(v) => setRole(v as UserRole)} className="grid gap-2">
               {roles.map(({ value, label, description, icon: Icon }) => (
-                <label
-                  key={value}
+                <label key={value}
                   className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    role === value
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                      : "border-input bg-card hover:border-primary/30"
-                  }`}
-                >
+                    role === value ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-input bg-card hover:border-primary/30"
+                  }`}>
                   <RadioGroupItem value={value} className="mt-0.5" />
                   <Icon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div className="min-w-0">
@@ -59,18 +76,19 @@ export default function RegisterPage() {
             </RadioGroup>
           </div>
 
-          <input type="text" placeholder="Full Name" value={form.name} onChange={(e) => update("name", e.target.value)}
+          <input type="text" placeholder="Full Name *" value={form.name} onChange={(e) => update("name", e.target.value)} required
             className="w-full h-11 px-4 rounded-xl border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <input type="email" placeholder="Email Address" value={form.email} onChange={(e) => update("email", e.target.value)}
+          <input type="email" placeholder="Email Address *" value={form.email} onChange={(e) => update("email", e.target.value)} required
             className="w-full h-11 px-4 rounded-xl border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <input type="tel" placeholder="Phone Number" value={form.phone} onChange={(e) => update("phone", e.target.value)}
             className="w-full h-11 px-4 rounded-xl border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <input type="text" placeholder="Church Branch" value={form.branch} onChange={(e) => update("branch", e.target.value)}
             className="w-full h-11 px-4 rounded-xl border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <input type="password" placeholder="Password" value={form.password} onChange={(e) => update("password", e.target.value)}
+          <input type="password" placeholder="Password *" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6}
             className="w-full h-11 px-4 rounded-xl border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <button type="submit" className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all">
-            Create Account
+          <button type="submit" disabled={loading}
+            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50">
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
         <p className="text-center text-sm text-muted-foreground">
